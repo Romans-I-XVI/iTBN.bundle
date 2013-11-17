@@ -17,7 +17,7 @@ def Start():
   ObjectContainer.title1 = TITLE
   ObjectContainer.view_group = 'List'
   ObjectContainer.art = R(ART)
-  ObjectContainer.no_history = True
+  #ObjectContainer.no_history = True
 
   # Default icons for DirectoryObject and VideoClipObject in case there isn't an image
   DirectoryObject.thumb = R(ICON)
@@ -31,13 +31,15 @@ def Start():
 ###################################################################################################
 
 def MainMenu():
-  oc = ObjectContainer(no_history=True)
-  oc.add(DirectoryObject(key = Callback(Recent), title = 'Recent'))
-  oc.add(DirectoryObject(key = Callback(Categories), title = 'Categories'))
-  oc.add(DirectoryObject(key = Callback(Programs), title = 'Programs'))
-  oc.add(DirectoryObject(key = Callback(Movies), title = 'Movies'))
-  oc.add(DirectoryObject(key = Callback(Live), title = 'Live'))
-  return oc
+	oc = ObjectContainer()
+	oc.add(DirectoryObject(key = Callback(Recent), title = 'Recent'))
+	oc.add(DirectoryObject(key = Callback(Categories), title = 'Categories'))
+	oc.add(DirectoryObject(key = Callback(Programs), title = 'Programs'))
+	oc.add(DirectoryObject(key = Callback(Movies), title = 'Movies'))
+	oc.add(DirectoryObject(key = Callback(Live), title = 'Live'))
+	oc.add(InputDirectoryObject(key = Callback(Search), title = 'Search', thumb = R('search.png'))
+	oc.add(InputDirectoryObject(key = Callback(AirDate), title = 'Air Date', prompt = 'yyyy-mm-dd', thumb = R('search.png')))
+	return oc
 
 
 
@@ -205,21 +207,150 @@ def Live():
 		]
 		))
 	return oc
+###################################################################################################
 
+def Search(query):
+	oc = ObjectContainer(no_history=True)
+	search_string = query.replace(" ","+")
+	search_string = 'http://www.itbn.org/search?search='+search_string+'&submit_search=search'
+	link = HTTP.Request(search_string).content
+	match=re.compile('						<a href=".+?/ec/(.+?)"><img src=".+?" alt=".+?" title=".+?"').findall(link)
+	name=re.compile('						<a href=".+?"><img src=".+?" alt=".+?" title="(.+?)"').findall(link)
+	date=re.compile('<span class="air_date">(.+?)</span>').findall(link)
+	description=re.compile('						<span class="description">(.+?)</span>').findall(link)
+	thumbnail=re.compile('						<a href=".+?"><img src="(.+?)" alt=".+?" title=".+?"').findall(link)
+	thumbnail = [w.replace('\\', '') for w in thumbnail]
+	prefixcode='http://www.tbn.org/watch/mobile_app/v3/ooyala_strip_formats.php?method=GET&key=undefined&secret=undefined&expires=600&embedcode=',len(match)
+	prefix=[prefixcode[0]]*prefixcode[1]
+	suffixcode='&requestbody=&parameters=',len(match)
+	suffix=[suffixcode[0]]*suffixcode[1]
+	nextpage=re.compile('<div class=\'btn_container\'><a href=\'(.+?)\' class=\'btn_next\'>').findall(link)
+	nextpagelabelurl=re.compile('<div class=\'btn_container\'><a href=\'.+?/page/(.+?.+?.+?)').findall(link)
+	if nextpage:
+		nextpagelabel=nextpagelabelurl[0]
+		nextpagelabel=re.sub("\D", "", nextpagelabel)
+#	previouspage=re.compile('class=\'btn_first\'>&lt;&lt;</a></li><li><a href=\'(.+?)\' class=\'btn_prev\'>').findall(link)
+#	previouspagelabelurl=re.compile('class=\'btn_first\'>&lt;&lt;</a></li><li><a href=\'.+?/page/(.+?)\' class=\'btn_prev\'>').findall(link)
+#	if previouspage:
+#		previouspagelabel=previouspagelabelurl[0]
+#		previouspagelabel=previouspagelabel.replace('%27','')
+#		previouspagelabel=[w.replace('/', '') for w in previouspagelabel]
+#		previouspagelabel=" ".join(previouspagelabel)
+#		previouspagelabel=[int(s) for s in previouspagelabel.split() if s.isdigit()]
+#		previouspagelabel=''.join(str(e) for e in previouspagelabel)
+	source=zip((prefix),(match),(suffix))
+	mylist=zip((source),(name),(thumbnail),(description),(date))
+	#if previouspage:
+		#addDir('Page '+previouspagelabel,'http://www.itbn.org'+previouspage[0],1,next_thumb)
+	for url,name,thumbnail,description,date in mylist:
+		description=description.replace("&quot;","\"")
+		description=description.replace("&#039;","\'")
+		description=description.replace("&hellip;","...")
+		description=description.replace("&amp;","&")
+		description=description.split('\"', 1)[-1]
+		description=description.replace('\"','')
+		description=description.replace(',','')
+		name=reduce(lambda rst, d: rst * 1 + d, (name))
+		name=name.replace("&quot;","\"")
+		name=name.replace("&#039;","\'")
+		name=name.replace("&hellip;","...")
+		name=name.replace("&amp;","&")
+		url=reduce(lambda rst, d: rst * 1 + d, (url))
+		oc.add(VideoClipObject(
+		key = Callback(GETSOURCE, url = url),
+		rating_key = url,
+		title = name +' - '+ description +' ('+date+')',
+		thumb = thumbnail,
+		items = [
+			MediaObject(
+			container = Container.MP4,
+			video_codec = VideoCodec.H264,
+			audio_codec = AudioCodec.AAC,
+			audio_channels = 2,
+			parts = [PartObject(key = Callback(GETSOURCE, url = url))]
+			)
+		]
+		))
+	if nextpage:
+		oc.add(DirectoryObject(key = Callback(Links, url = 'http://www.itbn.org'+nextpage[0]), title = 'Page '+nextpagelabel))
+	return oc
 
 ###################################################################################################
 
+def AirDate(query):
+	oc = ObjectContainer(no_history=True)
+	search_string = query.replace(" ","+")
+	search_string = 'http://www.itbn.org/search?airDate='+search_string
+	link = HTTP.Request(search_string).content
+	match=re.compile('						<a href=".+?/ec/(.+?)"><img src=".+?" alt=".+?" title=".+?"').findall(link)
+	name=re.compile('						<a href=".+?"><img src=".+?" alt=".+?" title="(.+?)"').findall(link)
+	date=re.compile('<span class="air_date">(.+?)</span>').findall(link)
+	description=re.compile('						<span class="description">(.+?)</span>').findall(link)
+	thumbnail=re.compile('						<a href=".+?"><img src="(.+?)" alt=".+?" title=".+?"').findall(link)
+	thumbnail = [w.replace('\\', '') for w in thumbnail]
+	prefixcode='http://www.tbn.org/watch/mobile_app/v3/ooyala_strip_formats.php?method=GET&key=undefined&secret=undefined&expires=600&embedcode=',len(match)
+	prefix=[prefixcode[0]]*prefixcode[1]
+	suffixcode='&requestbody=&parameters=',len(match)
+	suffix=[suffixcode[0]]*suffixcode[1]
+	nextpage=re.compile('<div class=\'btn_container\'><a href=\'(.+?)\' class=\'btn_next\'>').findall(link)
+	nextpagelabelurl=re.compile('<div class=\'btn_container\'><a href=\'.+?/page/(.+?.+?.+?)').findall(link)
+	if nextpage:
+		nextpagelabel=nextpagelabelurl[0]
+		nextpagelabel=re.sub("\D", "", nextpagelabel)
+#	previouspage=re.compile('class=\'btn_first\'>&lt;&lt;</a></li><li><a href=\'(.+?)\' class=\'btn_prev\'>').findall(link)
+#	previouspagelabelurl=re.compile('class=\'btn_first\'>&lt;&lt;</a></li><li><a href=\'.+?/page/(.+?)\' class=\'btn_prev\'>').findall(link)
+#	if previouspage:
+#		previouspagelabel=previouspagelabelurl[0]
+#		previouspagelabel=previouspagelabel.replace('%27','')
+#		previouspagelabel=[w.replace('/', '') for w in previouspagelabel]
+#		previouspagelabel=" ".join(previouspagelabel)
+#		previouspagelabel=[int(s) for s in previouspagelabel.split() if s.isdigit()]
+#		previouspagelabel=''.join(str(e) for e in previouspagelabel)
+	source=zip((prefix),(match),(suffix))
+	mylist=zip((source),(name),(thumbnail),(description),(date))
+	#if previouspage:
+		#addDir('Page '+previouspagelabel,'http://www.itbn.org'+previouspage[0],1,next_thumb)
+	for url,name,thumbnail,description,date in mylist:
+		description=description.replace("&quot;","\"")
+		description=description.replace("&#039;","\'")
+		description=description.replace("&hellip;","...")
+		description=description.replace("&amp;","&")
+		description=description.split('\"', 1)[-1]
+		description=description.replace('\"','')
+		description=description.replace(',','')
+		name=reduce(lambda rst, d: rst * 1 + d, (name))
+		name=name.replace("&quot;","\"")
+		name=name.replace("&#039;","\'")
+		name=name.replace("&hellip;","...")
+		name=name.replace("&amp;","&")
+		url=reduce(lambda rst, d: rst * 1 + d, (url))
+		oc.add(VideoClipObject(
+		key = Callback(GETSOURCE, url = url),
+		rating_key = url,
+		title = name +' - '+ description +' ('+date+')',
+		thumb = thumbnail,
+		items = [
+			MediaObject(
+			container = Container.MP4,
+			video_codec = VideoCodec.H264,
+			audio_codec = AudioCodec.AAC,
+			audio_channels = 2,
+			parts = [PartObject(key = Callback(GETSOURCE, url = url))]
+			)
+		]
+		))
+	if nextpage:
+		oc.add(DirectoryObject(key = Callback(Links, url = 'http://www.itbn.org'+nextpage[0]), title = 'Page '+nextpagelabel))
+	return oc
+
+###################################################################################################
 def Links(url):
 	oc = ObjectContainer(no_history=True)
 	link = HTTP.Request(url).content
 	match=re.compile('						<a href=".+?/ec/(.+?)"><img src=".+?" alt=".+?" title=".+?"').findall(link)
-	title=re.compile('						<a href=".+?"><img src=".+?" alt=".+?" title="(.+?)"').findall(link)
-	function=' '*len(match)
-	leftparentheses='('*len(match)
+	name=re.compile('						<a href=".+?"><img src=".+?" alt=".+?" title="(.+?)"').findall(link)
 	date=re.compile('<span class="air_date">(.+?)</span>').findall(link)
 	description=re.compile('						<span class="description">(.+?)</span>').findall(link)
-	rightparentheses=')'*len(match)
-	name=title
 	thumbnail=re.compile('						<a href=".+?"><img src="(.+?)" alt=".+?" title=".+?"').findall(link)
 	thumbnail = [w.replace('\\', '') for w in thumbnail]
 	prefixcode='http://www.tbn.org/watch/mobile_app/v3/ooyala_strip_formats.php?method=GET&key=undefined&secret=undefined&expires=600&embedcode=',len(match)
@@ -231,31 +362,29 @@ def Links(url):
 	airdatepage=re.compile('.+?airDate=(.+?.+?.+?.+?.+?.+?.+?.+?.+?.+?)').findall(url)
 	if nextpage:
 		nextpagelabel=nextpagelabelurl[0]
-		nextpagelabel=nextpagelabel.replace('%27','')
-		nextpagelabel=nextpagelabel.replace('\'','')
+		nextpagelabel=re.sub("\D", "", nextpagelabel)
 		if airdatepage:
 			nextpagelabel=nextpagelabel.replace(airdatepage[0],'')
 			nextpagelabel=[w.replace('/', '') for w in nextpagelabel]
 			nextpagelabel=" ".join(nextpagelabel)
 			nextpagelabel=[int(s) for s in nextpagelabel.split() if s.isdigit()]
 			nextpagelabel=''.join(str(e) for e in nextpagelabel)
-	previouspage=re.compile('class=\'btn_first\'>&lt;&lt;</a></li><li><a href=\'(.+?)\' class=\'btn_prev\'>').findall(link)
-	previouspagelabelurl=re.compile('class=\'btn_first\'>&lt;&lt;</a></li><li><a href=\'.+?/page/(.+?.+?.+?)').findall(link)
-	if previouspage:
-		previouspagelabel=previouspagelabelurl[0]
-		previouspagelabel=previouspagelabel.replace('%27','')
-		if airdatepage:
-			previouspagelabel=previouspagelabel.replace(airdatepage[0],'')
-			previouspagelabel=[w.replace('/', '') for w in previouspagelabel]
-			previouspagelabel=" ".join(previouspagelabel)
-			previouspagelabel=[int(s) for s in previouspagelabel.split() if s.isdigit()]
-			previouspagelabel=''.join(str(e) for e in previouspagelabel)
+#	previouspage=re.compile('class=\'btn_first\'>&lt;&lt;</a></li><li><a href=\'(.+?)\' class=\'btn_prev\'>').findall(link)
+#	previouspagelabelurl=re.compile('class=\'btn_first\'>&lt;&lt;</a></li><li><a href=\'.+?/page/(.+?.+?.+?)').findall(link)
+#	if previouspage:
+#		previouspagelabel=previouspagelabelurl[0]
+#		previouspagelabel=previouspagelabel.replace('%27','')
+#		if airdatepage:
+#			previouspagelabel=previouspagelabel.replace(airdatepage[0],'')
+#			previouspagelabel=[w.replace('/', '') for w in previouspagelabel]
+#			previouspagelabel=" ".join(previouspagelabel)
+#			previouspagelabel=[int(s) for s in previouspagelabel.split() if s.isdigit()]
+#			previouspagelabel=''.join(str(e) for e in previouspagelabel)
 	source=zip((prefix),(match),(suffix))
 	mylist=zip((source),(name),(thumbnail),(description),(date))
 	#if previouspage:
 	#	previousurl = sys.argv[0]+"?url="+urllib.quote_plus('http://www.itbn.org'+previouspage[0])+"&mode="+str(11)+"&name="+urllib.quote_plus('Page '+previouspagelabel)                
 	#	oc.add(DirectoryObject(key = previousurl, title = 'Page '+previouspagelabe))
-		#addLink('Page '+previouspagelabel,previousurl,previous_thumb)
 	for url,name,thumbnail,description,date in mylist:
 		description=description.replace("&quot;","\"")
 		description=description.replace("&#039;","\'")
