@@ -381,7 +381,7 @@ def Links(url):
 	#if previouspage:
 	#	previousurl = sys.argv[0]+"?url="+urllib.quote_plus('http://www.itbn.org'+previouspage[0])+"&mode="+str(11)+"&name="+urllib.quote_plus('Page '+previouspagelabel)                
 	#	oc.add(DirectoryObject(key = previousurl, title = 'Page '+previouspagelabe))
-	for url,name,thumbnail,description,date in mylist:
+	for url,name,thumb,description,date in mylist:
 		description=description.replace("&quot;","\"")
 		description=description.replace("&#039;","\'")
 		description=description.replace("&hellip;","...")
@@ -395,11 +395,25 @@ def Links(url):
 		name=name.replace("&hellip;","...")
 		name=name.replace("&amp;","&")
 		url=reduce(lambda rst, d: rst * 1 + d, (url))
-		oc.add(VideoClipObject(
-		key = Callback(GETSOURCE, url = url),
+		title = name +' - '+ description +' ('+date+')'
+		oc.add(CreateVideoClipObject(
+			url = url,
+			title = title,
+			thumb = thumb,
+		))
+	if nextpage:
+		oc.add(DirectoryObject(key = Callback(Links, url = 'http://www.itbn.org'+nextpage[0]), title = 'Page '+nextpagelabel))
+		# addDir('Page '+nextpagelabel,'http://www.itbn.org'+nextpage[0],1,next_thumb)
+	return oc
+	
+################################################################################
+
+def CreateVideoClipObject(url, title, thumb, include_container=False):
+	videoclip_obj = VideoClipObject(
+		key = Callback(CreateVideoClipObject, url=url, title=title, thumb=thumb, include_container=True),
 		rating_key = url,
-		title = name +' - '+ description +' ('+date+')',
-		thumb = thumbnail,
+		title = title,
+		thumb = thumb,
 		items = [
 			MediaObject(
 			container = Container.MP4,
@@ -409,12 +423,12 @@ def Links(url):
 			parts = [PartObject(key = Callback(GETSOURCE, url = url))]
 			)
 		]
-		))
-	if nextpage:
-		oc.add(DirectoryObject(key = Callback(Links, url = 'http://www.itbn.org'+nextpage[0]), title = 'Page '+nextpagelabel))
-		# addDir('Page '+nextpagelabel,'http://www.itbn.org'+nextpage[0],1,next_thumb)
-	return oc
-	
+	)
+	if include_container:
+		return ObjectContainer(objects=[videoclip_obj])
+	else:
+		return videoclip_obj
+
 ################################################################################
 @indirect
 def GETSOURCE(url):
