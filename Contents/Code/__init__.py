@@ -20,9 +20,9 @@ def Start():
   #ObjectContainer.no_history = True
 
   # Default icons for DirectoryObject and VideoClipObject in case there isn't an image
-  DirectoryObject.thumb = R(ICON)
+  #DirectoryObject.thumb = R(ICON)
   DirectoryObject.art = R(ART)
-  VideoClipObject.thumb = R(ICON)
+  #VideoClipObject.thumb = R(ICON)
   VideoClipObject.art = R(ART)
 
   # Set the default cache time
@@ -32,18 +32,17 @@ def Start():
 
 def MainMenu():
 	oc = ObjectContainer()
-	oc.add(DirectoryObject(key = Callback(Recent), title = 'Recent'))
-	oc.add(DirectoryObject(key = Callback(Categories), title = 'Categories'))
-	oc.add(DirectoryObject(key = Callback(Programs), title = 'Programs'))
-	oc.add(DirectoryObject(key = Callback(Movies), title = 'Movies'))
-	oc.add(DirectoryObject(key = Callback(Live), title = 'Live'))
+	oc.add(DirectoryObject(key = Callback(Recent), title = 'Recent', thumb = R('DefaultFolder.png')))
+	oc.add(DirectoryObject(key = Callback(Categories), title = 'Categories', thumb = R('DefaultFolder.png')))
+	oc.add(DirectoryObject(key = Callback(Programs), title = 'Programs', thumb = R('DefaultFolder.png')))
+	oc.add(DirectoryObject(key = Callback(Movies), title = 'Movies', thumb = R('movies.png')))
 	oc.add(InputDirectoryObject(key = Callback(Search), title = 'Search', thumb = R('search.png')))
-	oc.add(InputDirectoryObject(key = Callback(AirDate), title = 'Air Date', prompt = 'yyyy-mm-dd', thumb = R('search.png')))
+	oc.add(InputDirectoryObject(key = Callback(AirDate), title = 'Air Date', prompt = 'Search by date with the format yyyy-mm-dd', thumb = R('search.png')))
 	return oc
 ###################################################################################################
 
 def Recent():
-	oc = ObjectContainer(no_history=True)
+	oc = ObjectContainer()
 	link = HTTP.Request('http://www.tbn.org/watch/mobile_app/v3/itbnapi.php?platform=android&request_path=%2Fapi%2Fv1.0%2Fvideos%2Flimit%2F250%2Fsortby%2Fairdate&device_name=GT-I9100&os_ver=2.3.4&screen_width=1600&screen_height=900&app_ver=3.0&UUID=1d5f5000-656a-4a16-847f-138937d4d0c4').content
 	match=re.compile('"embedCode":"(.+?)"').findall(link)
 	title=re.compile('"displayTitle":"(.+?)"').findall(link)
@@ -59,7 +58,7 @@ def Recent():
 	suffix=[suffixcode[0]]*suffixcode[1]
 	source=zip((prefix),(match),(suffix))
 	mylist=zip((source),(name),(thumbnail),(description),(date),(duration))
-	for url,name,thumbnail,description,date,duration in mylist:
+	for url,name,thumb,description,date,duration in mylist:
 		description=description.replace("\\","")
 		description=description.replace("u2019","\'")
 		description=description.split('\"', 1)[-1]
@@ -68,21 +67,11 @@ def Recent():
 		duration=int(duration)
 		name = reduce(lambda rst, d: rst * 1 + d, (name))
 		url = reduce(lambda rst, d: rst * 1 + d, (url))
-		oc.add(VideoClipObject(
-		key = Callback(GETSOURCE, url = url),
-		rating_key = url,
-		title = name +' - '+ description +' ('+date+')',
-		thumb = thumbnail,
-		duration = duration,
-		items = [
-			MediaObject(
-			container = Container.MP4,
-			video_codec = VideoCodec.H264,
-			audio_codec = AudioCodec.AAC,
-			audio_channels = 2,
-			parts = [PartObject(key = Callback(GETSOURCE, url = url))]
-			)
-		]
+		title = name +' - '+ description +' ('+date+')'
+		oc.add(CreateVideoClipObject(
+			url = url,
+			title = title,
+			thumb = thumb,
 		))
 	return oc
 ###################################################################################################
@@ -128,7 +117,7 @@ def FaithIssues():
 ###################################################################################################
 
 def Programs():
-	oc = ObjectContainer(no_history=True)
+	oc = ObjectContainer()
 	page_content = HTTP.Request('http://www.itbn.org/programs').content
 	match=re.compile('									<a href="(.+?)">(.+?)</a>').findall(page_content)
 	for url,name in match:
@@ -149,64 +138,49 @@ def Movies():
 	thumbnail=re.compile('"thumbnailUrl":"(.+?)"').findall(link)
 	thumbnail = [w.replace('\\', '') for w in thumbnail]
 	mylist=zip((match),(name),(thumbnail),(description),(date))
-	for url,name,thumbnail,description,date in mylist:
+	for url,name,thumb,description,date in mylist:
 		description=description.replace("\\","")
 		description=description.replace("u2019","\'")
 		prefixcode='http://www.tbn.org/watch/mobile_app/v3/ooyala_strip_formats.php?method=GET&key=undefined&secret=undefined&expires=600&embedcode='
 		suffixcode='&requestbody=&parameters='
 		url=prefixcode+url+suffixcode
-		Log(url)
-		oc.add(VideoClipObject(
-		key = Callback(GETSOURCE, url = url),
-		rating_key = url,
-		title = name +' - '+ description +' ('+date+')',
-		thumb = thumbnail,
-		items = [
-			MediaObject(
-			container = Container.MP4,
-			video_codec = VideoCodec.H264,
-			audio_codec = AudioCodec.AAC,
-			audio_channels = 2,
-			parts = [PartObject(key = Callback(GETSOURCE, url = url))]
-			)
-		]
+		title = name +' - '+ description +' ('+date+')'
+		oc.add(CreateVideoClipObject(
+			url = url,
+			title = title,
+			thumb = thumb,
 		))
 	return oc
                 
 ###################################################################################################
 
-def Live():
-	oc = ObjectContainer()
-	link = HTTP.Request('http://www.tbn.org/watch/mobile_app/v3/getlivestreams.php?device_name=GT-I9100&os_ver=2.3.4&screen_width=1600&screen_height=900&app_ver=3.0&UUID=1d5f5000-656a-4a16-847f-138937d4d0c4').content
-	#if settings.getSetting("livequality") == '0':
-	#match=re.compile('\"andsuperstreamurl\":\"(.+?)\"').findall(link)
-	#if settings.getSetting("livequality") == '1':
-	#	match='rtmp://cp114430.live.edgefcs.net/live/ playpath=tbn_mbr_300@101613 live=true','rtmp://cp114428.live.edgefcs.net/live/ playpath=churchch_mbr_300@101620 live=true','rtmp://cp114432.live.edgefcs.net/live/ playpath=jctv_mbr_300@101615 live=true','rtmp://cp114426.live.edgefcs.net/live/ playpath=soac_mbr_300@101622 live=true','rtmp://cp114434.live.edgefcs.net/live/ playpath=enlace_mbr_300@101618 live=true','rtmp://cp114436.live.edgefcs.net/live/ playpath=enlacejuvenil_800@102106 live=true','rtmp://cp129063.live.edgefcs.net/live/ playpath=nejat_mbr_300@101623 live=true','rtmp://cp129064.live.edgefcs.net/live/ playpath=healing_mbr_300@101624 live=true','rtmp://cp129065.live.edgefcs.net/live/ playpath=tbnrussia-high@58776 live=true','rtmp://cp129066.live.edgefcs.net/live/ playpath=soacrussia-high@58777 live=true','rtmp://mediaplatform2.trinetsolutions.com/tbn/ playpath=juce_super.sdp  live=true','rtmp://mediaplatform2.trinetsolutions.com/tbn_repeater/ playpath=tbnafrica.stream live=true'
-	#if settings.getSetting("livequality") == '2':
-	match='rtmp://cp114430.live.edgefcs.net/live/ playpath=tbn_mbr_600@101613 pageURL=http://www.tbn.org/watch-us  live=true','rtmp://cp114428.live.edgefcs.net/live/ playpath=churchch_mbr_600@101620 pageURL=http://www.tbn.org/watch-us  live=true','rtmp://cp114432.live.edgefcs.net/live/ playpath=jctv_mbr_600@101615 pageURL=http://www.tbn.org/watch-us  live=true','rtmp://cp114426.live.edgefcs.net/live/ playpath=soac_mbr_600@101622 live=true','rtmp://cp114434.live.edgefcs.net/live/ playpath=enlace_mbr_600@101618 pageURL=http://www.tbn.org/watch-us  live=true','rtmp://cp114436.live.edgefcs.net/live/ playpath=enlacejuvenil_800@102106 pageURL=http://www.tbn.org/watch-us  live=true','rtmp://cp129063.live.edgefcs.net/live/ playpath=nejat_mbr_600@101623 pageURL=http://www.tbn.org/watch-us  live=true','rtmp://cp253352.live.edgefcs.net/live/ playpath=alhorreya_500@142129 pageURL=http://www.tbn.org/watch-us live=true','rtmp://cp129065.live.edgefcs.net/live/ playpath=tbnrussia-high@58776 pageURL=http://www.tbn.org/watch-us  live=true','rtmp://cp129066.live.edgefcs.net/live/ playpath=soacrussia-high@58777 pageURL=http://www.tbn.org/watch-us  live=true','rtmp://cp253350.live.edgefcs.net/live playpath=juce@142128  live=true','rtmp://cp253351.live.edgefcs.net/live/ playpath=tbnafrica@144071 pageURL=http://www.tbn.org/watch-us  live=true','rtmp://cp210356.live.edgefcs.net/live playpath=tcilive_150@30064 pageURL=http://www.tbn.org/watch-us  live=true'
-	title=re.compile('\"name\":\"(.+?)\"').findall(link)
-	thumbnail=re.compile('\"icon\":\"(.+?)\"').findall(link)
-	mylist=zip((match),(title),(thumbnail))
-	for url,name,thumbnail in mylist:
-		oc.add(VideoClipObject(
-		key = url,
-		rating_key = url,
-		title = name,
-		thumb = thumbnail,
-		items = [
-			MediaObject(
-			protocols = Protocol.RTMP,
-			video_codec = VideoCodec.H264,
-			audio_codec = AudioCodec.AAC,
-			parts = [PartObject(key = url)]
-			)
-		]
-		))
-	return oc
+#def Live():
+#        oc = ObjectContainer()
+#        link = HTTP.Request('http://www.tbn.org/watch/mobile_app/v3/getlivestreams.php').content
+#        match='rtmp://cp114430.live.edgefcs.net/live/ playpath=tbn_mbr_600@101613 pageURL=http://www.tbn.org/watch-us live=true','rtmp://cp114428.live.edgefcs.net/live/ playpath=churchch_mbr_600@101620 pageURL=http://www.tbn.org/watch-us live=true','rtmp://cp114432.live.edgefcs.net/live/ playpath=jctv_mbr_600@101615 pageURL=http://www.tbn.org/watch-us live=true','rtmp://cp114426.live.edgefcs.net/live/ playpath=soac_mbr_600@101622 live=true','rtmp://cp114434.live.edgefcs.net/live/ playpath=enlace_mbr_600@101618 pageURL=http://www.tbn.org/watch-us live=true','rtmp://cp114436.live.edgefcs.net/live/ playpath=enlacejuvenil_800@102106 pageURL=http://www.tbn.org/watch-us live=true','rtmp://cp129063.live.edgefcs.net/live/ playpath=nejat_mbr_600@101623 pageURL=http://www.tbn.org/watch-us live=true','rtmp://cp253352.live.edgefcs.net/live/ playpath=alhorreya_500@142129 pageURL=http://www.tbn.org/watch-us live=true','rtmp://cp129065.live.edgefcs.net/live/ playpath=tbnrussia-high@58776 pageURL=http://www.tbn.org/watch-us live=true','rtmp://cp129066.live.edgefcs.net/live/ playpath=soacrussia-high@58777 pageURL=http://www.tbn.org/watch-us live=true','rtmp://cp253350.live.edgefcs.net/live playpath=juce@142128 live=true','rtmp://cp253351.live.edgefcs.net/live/ playpath=tbnafrica@144071 pageURL=http://www.tbn.org/watch-us live=true','rtmp://cp210356.live.edgefcs.net/live playpath=tcilive_150@30064 pageURL=http://www.tbn.org/watch-us live=true'
+#        title=re.compile('\"name\":\"(.+?)\"').findall(link)
+#        thumbnail=re.compile('\"icon\":\"(.+?)\"').findall(link)
+#        mylist=zip((match),(title),(thumbnail))
+#        for url,name,thumbnail in mylist:
+#                oc.add(VideoClipObject(
+#                key = url,
+#                rating_key = url,
+#                title = name,
+#                thumb = thumbnail,
+#                items = [
+#                        MediaObject(
+#                        protocols = Protocol.RTMP,
+#                        video_codec = VideoCodec.H264,
+#                        audio_codec = AudioCodec.AAC,
+#                        parts = [PartObject(key = url)]
+#                        )
+#                ]
+#                ))
+#        return oc
 ###################################################################################################
 
 def Search(query):
-	oc = ObjectContainer(no_history=True)
+	oc = ObjectContainer()
 	search_string = query.replace(" ","+")
 	search_string = 'http://www.itbn.org/search?search='+search_string+'&submit_search=search'
 	link = HTTP.Request(search_string).content
@@ -238,7 +212,7 @@ def Search(query):
 	mylist=zip((source),(name),(thumbnail),(description),(date))
 	#if previouspage:
 		#addDir('Page '+previouspagelabel,'http://www.itbn.org'+previouspage[0],1,next_thumb)
-	for url,name,thumbnail,description,date in mylist:
+	for url,name,thumb,description,date in mylist:
 		description=description.replace("&quot;","\"")
 		description=description.replace("&#039;","\'")
 		description=description.replace("&hellip;","...")
@@ -252,29 +226,20 @@ def Search(query):
 		name=name.replace("&hellip;","...")
 		name=name.replace("&amp;","&")
 		url=reduce(lambda rst, d: rst * 1 + d, (url))
-		oc.add(VideoClipObject(
-		key = Callback(GETSOURCE, url = url),
-		rating_key = url,
-		title = name +' - '+ description +' ('+date+')',
-		thumb = thumbnail,
-		items = [
-			MediaObject(
-			container = Container.MP4,
-			video_codec = VideoCodec.H264,
-			audio_codec = AudioCodec.AAC,
-			audio_channels = 2,
-			parts = [PartObject(key = Callback(GETSOURCE, url = url))]
-			)
-		]
+		title = name +' - '+ description +' ('+date+')'
+		oc.add(CreateVideoClipObject(
+			url = url,
+			title = title,
+			thumb = thumb,
 		))
 	if nextpage:
-		oc.add(DirectoryObject(key = Callback(Links, url = 'http://www.itbn.org'+nextpage[0]), title = 'Page '+nextpagelabel))
+		oc.add(NextPageObject(key = Callback(Links, url = 'http://www.itbn.org'+nextpage[0]), title = 'Page '+nextpagelabel))
 	return oc
 
 ###################################################################################################
 
 def AirDate(query):
-	oc = ObjectContainer(no_history=True)
+	oc = ObjectContainer()
 	search_string = query.replace(" ","+")
 	search_string = 'http://www.itbn.org/search?airDate='+search_string
 	link = HTTP.Request(search_string).content
@@ -306,7 +271,7 @@ def AirDate(query):
 	mylist=zip((source),(name),(thumbnail),(description),(date))
 	#if previouspage:
 		#addDir('Page '+previouspagelabel,'http://www.itbn.org'+previouspage[0],1,next_thumb)
-	for url,name,thumbnail,description,date in mylist:
+	for url,name,thumb,description,date in mylist:
 		description=description.replace("&quot;","\"")
 		description=description.replace("&#039;","\'")
 		description=description.replace("&hellip;","...")
@@ -320,28 +285,19 @@ def AirDate(query):
 		name=name.replace("&hellip;","...")
 		name=name.replace("&amp;","&")
 		url=reduce(lambda rst, d: rst * 1 + d, (url))
-		oc.add(VideoClipObject(
-		key = Callback(GETSOURCE, url = url),
-		rating_key = url,
-		title = name +' - '+ description +' ('+date+')',
-		thumb = thumbnail,
-		items = [
-			MediaObject(
-			container = Container.MP4,
-			video_codec = VideoCodec.H264,
-			audio_codec = AudioCodec.AAC,
-			audio_channels = 2,
-			parts = [PartObject(key = Callback(GETSOURCE, url = url))]
-			)
-		]
+		title = name +' - '+ description +' ('+date+')'
+		oc.add(CreateVideoClipObject(
+			url = url,
+			title = title,
+			thumb = thumb,
 		))
 	if nextpage:
-		oc.add(DirectoryObject(key = Callback(Links, url = 'http://www.itbn.org'+nextpage[0]), title = 'Page '+nextpagelabel))
+		oc.add(NextPageObject(key = Callback(Links, url = 'http://www.itbn.org'+nextpage[0]), title = 'Page '+nextpagelabel))
 	return oc
 
 ###################################################################################################
 def Links(url):
-	oc = ObjectContainer(no_history=True)
+	oc = ObjectContainer()
 	link = HTTP.Request(url).content
 	match=re.compile('						<a href=".+?/ec/(.+?)"><img src=".+?" alt=".+?" title=".+?"').findall(link)
 	name=re.compile('						<a href=".+?"><img src=".+?" alt=".+?" title="(.+?)"').findall(link)
@@ -402,8 +358,7 @@ def Links(url):
 			thumb = thumb,
 		))
 	if nextpage:
-		oc.add(DirectoryObject(key = Callback(Links, url = 'http://www.itbn.org'+nextpage[0]), title = 'Page '+nextpagelabel))
-		# addDir('Page '+nextpagelabel,'http://www.itbn.org'+nextpage[0],1,next_thumb)
+		oc.add(NextPageObject(key = Callback(Links, url = 'http://www.itbn.org'+nextpage[0]), title = 'Page '+nextpagelabel))
 	return oc
 	
 ################################################################################
@@ -428,6 +383,7 @@ def CreateVideoClipObject(url, title, thumb, include_container=False):
 		return ObjectContainer(objects=[videoclip_obj])
 	else:
 		return videoclip_obj
+
 
 ################################################################################
 @indirect
