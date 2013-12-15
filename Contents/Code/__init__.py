@@ -17,7 +17,6 @@ def Start():
   ObjectContainer.title1 = TITLE
   ObjectContainer.view_group = 'List'
   ObjectContainer.art = R(ART)
-  #ObjectContainer.no_history = True
 
   # Default icons for DirectoryObject and VideoClipObject in case there isn't an image
   #DirectoryObject.thumb = R(ICON)
@@ -199,19 +198,8 @@ def Search(query):
 	if nextpage:
 		nextpagelabel=nextpagelabelurl[0]
 		nextpagelabel=re.sub("\D", "", nextpagelabel)
-#	previouspage=re.compile('class=\'btn_first\'>&lt;&lt;</a></li><li><a href=\'(.+?)\' class=\'btn_prev\'>').findall(link)
-#	previouspagelabelurl=re.compile('class=\'btn_first\'>&lt;&lt;</a></li><li><a href=\'.+?/page/(.+?)\' class=\'btn_prev\'>').findall(link)
-#	if previouspage:
-#		previouspagelabel=previouspagelabelurl[0]
-#		previouspagelabel=previouspagelabel.replace('%27','')
-#		previouspagelabel=[w.replace('/', '') for w in previouspagelabel]
-#		previouspagelabel=" ".join(previouspagelabel)
-#		previouspagelabel=[int(s) for s in previouspagelabel.split() if s.isdigit()]
-#		previouspagelabel=''.join(str(e) for e in previouspagelabel)
 	source=zip((prefix),(match),(suffix))
 	mylist=zip((source),(name),(thumbnail),(description),(date))
-	#if previouspage:
-		#addDir('Page '+previouspagelabel,'http://www.itbn.org'+previouspage[0],1,next_thumb)
 	for url,name,thumb,description,date in mylist:
 		description=description.replace("&quot;","\"")
 		description=description.replace("&#039;","\'")
@@ -258,19 +246,8 @@ def AirDate(query):
 	if nextpage:
 		nextpagelabel=nextpagelabelurl[0]
 		nextpagelabel=re.sub("\D", "", nextpagelabel)
-#	previouspage=re.compile('class=\'btn_first\'>&lt;&lt;</a></li><li><a href=\'(.+?)\' class=\'btn_prev\'>').findall(link)
-#	previouspagelabelurl=re.compile('class=\'btn_first\'>&lt;&lt;</a></li><li><a href=\'.+?/page/(.+?)\' class=\'btn_prev\'>').findall(link)
-#	if previouspage:
-#		previouspagelabel=previouspagelabelurl[0]
-#		previouspagelabel=previouspagelabel.replace('%27','')
-#		previouspagelabel=[w.replace('/', '') for w in previouspagelabel]
-#		previouspagelabel=" ".join(previouspagelabel)
-#		previouspagelabel=[int(s) for s in previouspagelabel.split() if s.isdigit()]
-#		previouspagelabel=''.join(str(e) for e in previouspagelabel)
 	source=zip((prefix),(match),(suffix))
 	mylist=zip((source),(name),(thumbnail),(description),(date))
-	#if previouspage:
-		#addDir('Page '+previouspagelabel,'http://www.itbn.org'+previouspage[0],1,next_thumb)
 	for url,name,thumb,description,date in mylist:
 		description=description.replace("&quot;","\"")
 		description=description.replace("&#039;","\'")
@@ -321,22 +298,8 @@ def Links(url):
 			nextpagelabel=" ".join(nextpagelabel)
 			nextpagelabel=[int(s) for s in nextpagelabel.split() if s.isdigit()]
 			nextpagelabel=''.join(str(e) for e in nextpagelabel)
-#	previouspage=re.compile('class=\'btn_first\'>&lt;&lt;</a></li><li><a href=\'(.+?)\' class=\'btn_prev\'>').findall(link)
-#	previouspagelabelurl=re.compile('class=\'btn_first\'>&lt;&lt;</a></li><li><a href=\'.+?/page/(.+?.+?.+?)').findall(link)
-#	if previouspage:
-#		previouspagelabel=previouspagelabelurl[0]
-#		previouspagelabel=previouspagelabel.replace('%27','')
-#		if airdatepage:
-#			previouspagelabel=previouspagelabel.replace(airdatepage[0],'')
-#			previouspagelabel=[w.replace('/', '') for w in previouspagelabel]
-#			previouspagelabel=" ".join(previouspagelabel)
-#			previouspagelabel=[int(s) for s in previouspagelabel.split() if s.isdigit()]
-#			previouspagelabel=''.join(str(e) for e in previouspagelabel)
 	source=zip((prefix),(match),(suffix))
 	mylist=zip((source),(name),(thumbnail),(description),(date))
-	#if previouspage:
-	#	previousurl = sys.argv[0]+"?url="+urllib.quote_plus('http://www.itbn.org'+previouspage[0])+"&mode="+str(11)+"&name="+urllib.quote_plus('Page '+previouspagelabel)                
-	#	oc.add(DirectoryObject(key = previousurl, title = 'Page '+previouspagelabe))
 	for url,name,thumb,description,date in mylist:
 		description=description.replace("&quot;","\"")
 		description=description.replace("&#039;","\'")
