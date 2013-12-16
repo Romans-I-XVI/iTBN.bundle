@@ -28,7 +28,7 @@ def Start():
   HTTP.CacheTime = CACHE_1HOUR
 
 ###################################################################################################
-@handler('/video/iTBN', 'iTBN')
+
 def MainMenu():
 	oc = ObjectContainer()
 	oc.add(DirectoryObject(key = Callback(Recent), title = 'Recent', thumb = R('DefaultFolder.png')))
