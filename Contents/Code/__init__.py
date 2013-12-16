@@ -36,7 +36,7 @@ def MainMenu():
 	oc.add(DirectoryObject(key = Callback(Programs), title = 'Programs', thumb = R('DefaultFolder.png')))
 	oc.add(DirectoryObject(key = Callback(Movies), title = 'Movies', thumb = R('movies.png')))
 	oc.add(InputDirectoryObject(key = Callback(Search), title = 'Search', thumb = R('search.png')))
-	oc.add(InputDirectoryObject(key = Callback(AirDate), title = 'Air Date', prompt = 'Search by date with the format yyyy-mm-dd', thumb = R('search.png')))
+	oc.add(InputDirectoryObject(key = Callback(AirDate), title = 'Air Date', prompt = 'Search by date with the format yyyy-mm-dd', thumb = R('searchdate.png')))
 	return oc
 ###################################################################################################
 @route('/video/iTBN/Recent')
