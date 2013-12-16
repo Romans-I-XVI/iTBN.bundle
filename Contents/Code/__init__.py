@@ -17,7 +17,6 @@ def Start():
   ObjectContainer.title1 = TITLE
   ObjectContainer.view_group = 'List'
   ObjectContainer.art = R(ART)
-  #ObjectContainer.no_history = True
 
   # Default icons for DirectoryObject and VideoClipObject in case there isn't an image
   #DirectoryObject.thumb = R(ICON)
@@ -29,7 +28,7 @@ def Start():
   HTTP.CacheTime = CACHE_1HOUR
 
 ###################################################################################################
-
+@handler('/video/iTBN', 'iTBN')
 def MainMenu():
 	oc = ObjectContainer()
 	oc.add(DirectoryObject(key = Callback(Recent), title = 'Recent', thumb = R('DefaultFolder.png')))
@@ -40,7 +39,7 @@ def MainMenu():
 	oc.add(InputDirectoryObject(key = Callback(AirDate), title = 'Air Date', prompt = 'Search by date with the format yyyy-mm-dd', thumb = R('search.png')))
 	return oc
 ###################################################################################################
-
+@route('/video/iTBN/Recent')
 def Recent():
 	oc = ObjectContainer()
 	link = HTTP.Request('http://www.tbn.org/watch/mobile_app/v3/itbnapi.php?platform=android&request_path=%2Fapi%2Fv1.0%2Fvideos%2Flimit%2F250%2Fsortby%2Fairdate&device_name=GT-I9100&os_ver=2.3.4&screen_width=1600&screen_height=900&app_ver=3.0&UUID=1d5f5000-656a-4a16-847f-138937d4d0c4').content
@@ -72,10 +71,11 @@ def Recent():
 			url = url,
 			title = title,
 			thumb = thumb,
+			date = Datetime.ParseDate(date),
 		))
 	return oc
 ###################################################################################################
-
+@route('/video/iTBN/Categories')
 def Categories():
 	oc = ObjectContainer()
 	oc.add(DirectoryObject(key = Callback(FaithIssues), title = 'Faith Issues'))
@@ -92,7 +92,7 @@ def Categories():
 	oc.add(DirectoryObject(key = Callback(Links, url = 'http://www.itbn.org/index/subview/lib/Programs/sublib/Reality'), title = 'Reality'))
 	return oc
 ###################################################################################################
-
+@route('/video/iTBN/FaithIssues')
 def FaithIssues():
 	oc = ObjectContainer()
 	oc.add(DirectoryObject(key = Callback(Links, url = 'http://www.itbn.org/index/subview/lib/Faith+Issues/sublib/Angels'), title = 'Angels'))
@@ -115,7 +115,7 @@ def FaithIssues():
 	oc.add(DirectoryObject(key = Callback(Links, url = 'http://www.itbn.org/index/subview/lib/Faith+Issues/sublib/Teen+Issues'), title = 'Teen Issues'))
 	return oc
 ###################################################################################################
-
+@route('/video/iTBN/Programs')
 def Programs():
 	oc = ObjectContainer()
 	page_content = HTTP.Request('http://www.itbn.org/programs').content
@@ -126,7 +126,7 @@ def Programs():
 	
 
 ###################################################################################################
-
+@route('/video/iTBN/Movies')
 def Movies():
 	oc = ObjectContainer()
 	link = HTTP.Request('http://www.tbn.org/watch/mobile_app/v3/itbnapi.php?platform=android&request_path=%2Fapi%2Fv1.0%2Fvideos%2Flimit%2F250%2Fsortby%2Fairdate%2Fcategory%2F1723&device_name=GT-I9100&os_ver=2.3.4&screen_width=1600&screen_height=900&app_ver=3.0&UUID=1d5f5000-656a-4a16-847f-138937d4d0c4').content
@@ -149,6 +149,7 @@ def Movies():
 			url = url,
 			title = title,
 			thumb = thumb,
+			date = Datetime.ParseDate(date),
 		))
 	return oc
                 
@@ -178,7 +179,7 @@ def Movies():
 #                ))
 #        return oc
 ###################################################################################################
-
+@route('/video/iTBN/Search')
 def Search(query):
 	oc = ObjectContainer()
 	search_string = query.replace(" ","+")
@@ -199,19 +200,8 @@ def Search(query):
 	if nextpage:
 		nextpagelabel=nextpagelabelurl[0]
 		nextpagelabel=re.sub("\D", "", nextpagelabel)
-#	previouspage=re.compile('class=\'btn_first\'>&lt;&lt;</a></li><li><a href=\'(.+?)\' class=\'btn_prev\'>').findall(link)
-#	previouspagelabelurl=re.compile('class=\'btn_first\'>&lt;&lt;</a></li><li><a href=\'.+?/page/(.+?)\' class=\'btn_prev\'>').findall(link)
-#	if previouspage:
-#		previouspagelabel=previouspagelabelurl[0]
-#		previouspagelabel=previouspagelabel.replace('%27','')
-#		previouspagelabel=[w.replace('/', '') for w in previouspagelabel]
-#		previouspagelabel=" ".join(previouspagelabel)
-#		previouspagelabel=[int(s) for s in previouspagelabel.split() if s.isdigit()]
-#		previouspagelabel=''.join(str(e) for e in previouspagelabel)
 	source=zip((prefix),(match),(suffix))
 	mylist=zip((source),(name),(thumbnail),(description),(date))
-	#if previouspage:
-		#addDir('Page '+previouspagelabel,'http://www.itbn.org'+previouspage[0],1,next_thumb)
 	for url,name,thumb,description,date in mylist:
 		description=description.replace("&quot;","\"")
 		description=description.replace("&#039;","\'")
@@ -231,13 +221,14 @@ def Search(query):
 			url = url,
 			title = title,
 			thumb = thumb,
+			date = Datetime.ParseDate(date),
 		))
 	if nextpage:
 		oc.add(NextPageObject(key = Callback(Links, url = 'http://www.itbn.org'+nextpage[0]), title = 'Page '+nextpagelabel))
 	return oc
 
 ###################################################################################################
-
+@route('/video/iTBN/AirDate')
 def AirDate(query):
 	oc = ObjectContainer()
 	search_string = query.replace(" ","+")
@@ -258,19 +249,8 @@ def AirDate(query):
 	if nextpage:
 		nextpagelabel=nextpagelabelurl[0]
 		nextpagelabel=re.sub("\D", "", nextpagelabel)
-#	previouspage=re.compile('class=\'btn_first\'>&lt;&lt;</a></li><li><a href=\'(.+?)\' class=\'btn_prev\'>').findall(link)
-#	previouspagelabelurl=re.compile('class=\'btn_first\'>&lt;&lt;</a></li><li><a href=\'.+?/page/(.+?)\' class=\'btn_prev\'>').findall(link)
-#	if previouspage:
-#		previouspagelabel=previouspagelabelurl[0]
-#		previouspagelabel=previouspagelabel.replace('%27','')
-#		previouspagelabel=[w.replace('/', '') for w in previouspagelabel]
-#		previouspagelabel=" ".join(previouspagelabel)
-#		previouspagelabel=[int(s) for s in previouspagelabel.split() if s.isdigit()]
-#		previouspagelabel=''.join(str(e) for e in previouspagelabel)
 	source=zip((prefix),(match),(suffix))
 	mylist=zip((source),(name),(thumbnail),(description),(date))
-	#if previouspage:
-		#addDir('Page '+previouspagelabel,'http://www.itbn.org'+previouspage[0],1,next_thumb)
 	for url,name,thumb,description,date in mylist:
 		description=description.replace("&quot;","\"")
 		description=description.replace("&#039;","\'")
@@ -290,12 +270,14 @@ def AirDate(query):
 			url = url,
 			title = title,
 			thumb = thumb,
+			date = Datetime.ParseDate(date),
 		))
 	if nextpage:
 		oc.add(NextPageObject(key = Callback(Links, url = 'http://www.itbn.org'+nextpage[0]), title = 'Page '+nextpagelabel))
 	return oc
 
 ###################################################################################################
+@route('/video/iTBN/Links')
 def Links(url):
 	oc = ObjectContainer()
 	link = HTTP.Request(url).content
@@ -321,22 +303,8 @@ def Links(url):
 			nextpagelabel=" ".join(nextpagelabel)
 			nextpagelabel=[int(s) for s in nextpagelabel.split() if s.isdigit()]
 			nextpagelabel=''.join(str(e) for e in nextpagelabel)
-#	previouspage=re.compile('class=\'btn_first\'>&lt;&lt;</a></li><li><a href=\'(.+?)\' class=\'btn_prev\'>').findall(link)
-#	previouspagelabelurl=re.compile('class=\'btn_first\'>&lt;&lt;</a></li><li><a href=\'.+?/page/(.+?.+?.+?)').findall(link)
-#	if previouspage:
-#		previouspagelabel=previouspagelabelurl[0]
-#		previouspagelabel=previouspagelabel.replace('%27','')
-#		if airdatepage:
-#			previouspagelabel=previouspagelabel.replace(airdatepage[0],'')
-#			previouspagelabel=[w.replace('/', '') for w in previouspagelabel]
-#			previouspagelabel=" ".join(previouspagelabel)
-#			previouspagelabel=[int(s) for s in previouspagelabel.split() if s.isdigit()]
-#			previouspagelabel=''.join(str(e) for e in previouspagelabel)
 	source=zip((prefix),(match),(suffix))
 	mylist=zip((source),(name),(thumbnail),(description),(date))
-	#if previouspage:
-	#	previousurl = sys.argv[0]+"?url="+urllib.quote_plus('http://www.itbn.org'+previouspage[0])+"&mode="+str(11)+"&name="+urllib.quote_plus('Page '+previouspagelabel)                
-	#	oc.add(DirectoryObject(key = previousurl, title = 'Page '+previouspagelabe))
 	for url,name,thumb,description,date in mylist:
 		description=description.replace("&quot;","\"")
 		description=description.replace("&#039;","\'")
@@ -356,6 +324,7 @@ def Links(url):
 			url = url,
 			title = title,
 			thumb = thumb,
+			date = Datetime.ParseDate(date),
 		))
 	if nextpage:
 		oc.add(NextPageObject(key = Callback(Links, url = 'http://www.itbn.org'+nextpage[0]), title = 'Page '+nextpagelabel))
@@ -363,18 +332,15 @@ def Links(url):
 	
 ################################################################################
 
-def CreateVideoClipObject(url, title, thumb, include_container=False):
+def CreateVideoClipObject(url, title, thumb, date, include_container=False):
 	videoclip_obj = VideoClipObject(
-		key = Callback(CreateVideoClipObject, url=url, title=title, thumb=thumb, include_container=True),
+		key = Callback(CreateVideoClipObject, url=url, title=title, thumb=thumb, date=date, include_container=True),
 		rating_key = url,
 		title = title,
 		thumb = thumb,
+		originally_available_at = date,
 		items = [
 			MediaObject(
-			container = Container.MP4,
-			video_codec = VideoCodec.H264,
-			audio_codec = AudioCodec.AAC,
-			audio_channels = 2,
 			parts = [PartObject(key = Callback(GETSOURCE, url = url))]
 			)
 		]
