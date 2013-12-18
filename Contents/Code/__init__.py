@@ -19,9 +19,9 @@ def Start():
   ObjectContainer.art = R(ART)
 
   # Default icons for DirectoryObject and VideoClipObject in case there isn't an image
-  #DirectoryObject.thumb = R(ICON)
+  DirectoryObject.thumb = R('DefaultFolder.png')
   DirectoryObject.art = R(ART)
-  #VideoClipObject.thumb = R(ICON)
+  VideoClipObject.thumb = R(ICON)
   VideoClipObject.art = R(ART)
 
   # Set the default cache time
